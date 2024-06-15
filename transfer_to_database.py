@@ -1,6 +1,6 @@
 import psycopg2
 import pandas as pd
-from config import host, user, password, db_name
+from config import DATABASE
 
 # Список файлов CSV и соответствующих таблиц с указанием кодировок
 csv_files = [
@@ -30,7 +30,13 @@ cur = None
 
 try:
     print("Подключение к базе данных...")
-    conn = psycopg2.connect(database=db_name, user=user, password=password, host=host)
+    conn = psycopg2.connect(
+        database=DATABASE['dbname'],
+        user=DATABASE['user'],
+        password=DATABASE['password'],
+        host=DATABASE['host'],
+        port=DATABASE['port']
+    )
     cur = conn.cursor()
 
     for csv_file, table_name, encoding in csv_files:
