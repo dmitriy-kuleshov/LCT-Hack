@@ -173,6 +173,9 @@ class Amount:
 
         #парсинг аргументов
 
+        # answer = getAmount(products, amount)
+        # return answer
+
         return {
             #то что нашел в бд
             "data": [{
