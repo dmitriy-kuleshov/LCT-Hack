@@ -164,8 +164,30 @@ class GetByName(Resource):
             return {"message": "Dataset not found"}, 404
 
 
+class Amount:
+    def post():
+        # {
+        #     products: string[], //список имен продуктов 
+        #     date: string //список отчетная дата
+        # }
+
+        return {
+            "data": [{
+                "name": 'Test1',
+                "amount": '1',
+            },
+            {
+                "name": 'Test2',
+                "amount": '2',
+            }], 
+            "not_found": ['Test3']
+        }
+    
+
+
 api.add_resource(Main, "/api/datasets/<int:data_id>")
 api.add_resource(GetByName, "/api/datasets_by_name")
+api.add_resource(Amount, "api/amount")
 api.init_app(app)
 
 if __name__ == "__main__":
