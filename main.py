@@ -168,7 +168,7 @@ class Amount:
     def post():
         # {
         #     products: string[], //список имен продуктов 
-        #     date: string //список отчетная дата
+        #     date: string //список отчетная дата дд.мм.гггг
         # }
 
         #парсинг аргументов
@@ -190,11 +190,45 @@ class Amount:
             "not_found": ['Test3']
         }
     
+class Forecast:
+    def post():
+        # {
+        #     products: string[], //список имен продуктов 
+        # }
+
+        #парсинг аргументов
+
+
+        return {
+            #то что нашел в бд
+            "data": [{
+                "name": 'Test1', 
+                "date": 'дд.мм.ггг',
+            },
+            {
+                "name": 'Test2',
+                "date": 'дд.мм.ггг',
+            }], 
+            #то что не нашел
+            "not_found": ['Test3']
+        }
+    
+class Purchase:
+    def get():
+
+
+        return {
+            #то что по формату из тз
+        }
+    
+
+    
 
 
 api.add_resource(Main, "/api/datasets/<int:data_id>")
 api.add_resource(GetByName, "/api/datasets_by_name")
 api.add_resource(Amount, "api/amount")
+api.add_resource(Forecast, "api/forecast")
 api.init_app(app)
 
 if __name__ == "__main__":
