@@ -4,8 +4,10 @@ from config import host, user, password, db_name
 from flask import Flask
 from flask_restful import Api, Resource, reqparse
 
+app = Flask(__name__)
+api = Api()
 
-connection = None
+'''connection = None
 
 try:
     print(f"Попытка подключения к базе данных с параметрами: host={host}, user={user}, db_name={db_name}")
@@ -20,6 +22,7 @@ try:
         cursor.execute("SELECT version();")
         print(f"SELECT version: {cursor.fetchone()}")
 
+    # создание БД
     # with connection.cursor() as cursor:
     #     cursor.execute(
     #         """CREATE TABLE users(
@@ -61,56 +64,83 @@ finally:
         connection.close()
         print("[INFO] Подключение к PostgreSQL закрыто")
 '''
-app = Flask(__name__)
-api = Api()
 
-datasets = {
-    1: {"name": "105/2", "expenses": 10},
-    2: {"name": "101/7", "expenses": 15}
-}
+def get_db_connection():
+    return psycopg2.connect(database=db_name,user=user,password=password, host=host)
 
 
-
-def load_datasets():
-    datasets = {}
-    try:
-        with open('xxx.csv', mode='r', encoding='utf-8') as file:
-            csv_reader = csv.DictReader(file)
-            for row in csv_reader:
-                data_id = int(row['id'])
-                datasets[data_id] = {"name": row['name'], "expenses": int(row['expenses'])}
-    except FileNotFoundError:
-        print("Файл не найден. Используется пустой набор данных.")
-    return datasets
-
-
-datasets = load_datasets()
-
+# парсер для обработки входящих данных
 parser = reqparse.RequestParser()
 parser.add_argument("name", type=str)
 parser.add_argument("expenses", type=int)
 
+# def load_datasets():
+#     datasets = {}
+#     try:
+#         with open('xxx.csv', mode='r', encoding='utf-8') as file:
+#             csv_reader = csv.DictReader(file)
+#             for row in csv_reader:
+#                 data_id = int(row['id'])
+#                 datasets[data_id] = {"name": row['name'], "expenses": int(row['expenses'])}
+#     except FileNotFoundError:
+#         print("Файл не найден. Используется пустой набор данных.")
+#     return datasets
+#
+#
+# datasets = load_datasets()
+
+
 
 class Main(Resource):
     def get(self, data_id):
+        conn = get_db_connection()
+        cur = conn.cursor()
         if data_id == 0:
-            return datasets
+            cur.execute("SELECT * FROM datasets;")
+            rows = cur.fetchall()
+            result = {}
+            for row in rows:
+                result[row[0]] = {"name": row[1], "expenses": row[2]}
+            conn.close()
+            return result
         else:
-            return datasets[data_id]
+            cur.execute("SELECT * FROM datasets WHERE id = %s;", (data_id,))
+            row = cur.fetchone()
+            conn.close()
+            if row:
+                return {row[0]: {"name": row[1], "expenses": row[2]}}
+            else:
+                return {"message": "Dataset not found"}, 404
 
     def delete(self, data_id):
-        del datasets[data_id]
-        return datasets
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM datasets WHERE id = %s;", (data_id,))
+        conn.commit()
+        conn.close()
+        return {"message": "Dataset deleted"}
 
     # передача несуществующего data_id (создание новой записи)
     def post(self, data_id):
-        datasets[data_id] = parser.parse_args()
-        return datasets
+        args = parser.parse_args()
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO datasets (id, name, expenses) VALUES (%s, %s, %s);",
+                    (data_id, args["name"], args["expenses"]))
+        conn.commit()
+        conn.close()
+        return {"message": "Dataset created"}, 201
 
     # обновление существующей записи через data_id
     def put(self, data_id):
-        datasets[data_id] = parser.parse_args()
-        return datasets
+        args = parser.parse_args()
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE datasets SET name = %s, expenses = %s WHERE id = %s;",
+                    (args["name"], args["expenses"], data_id))
+        conn.commit()
+        conn.close()
+        return {"message": "Dataset updated"}
 
 
 api.add_resource(Main, "/api/datasets/<int:data_id>")
@@ -119,5 +149,4 @@ api.init_app(app)
 if __name__ == "__main__":
     app.run(debug=True, port=3001, host="localhost")  # для удаленного сервера значение False
 
-'''
-# доработать взаимодействие с БД
+
