@@ -1,7 +1,7 @@
 import csv
 import psycopg2
 from config import host, user, password, db_name
-from flask import Flask
+from flask import Flask, request, jsonify
 from flask_restful import Api, Resource, reqparse
 
 app = Flask(__name__)
@@ -65,14 +65,16 @@ finally:
         print("[INFO] Подключение к PostgreSQL закрыто")
 '''
 
+
 def get_db_connection():
-    return psycopg2.connect(database=db_name,user=user,password=password, host=host)
+    return psycopg2.connect(database=db_name, user=user, password=password, host=host)
 
 
 # парсер для обработки входящих данных
 parser = reqparse.RequestParser()
 parser.add_argument("name", type=str)
 parser.add_argument("expenses", type=int)
+
 
 # def load_datasets():
 #     datasets = {}
@@ -88,8 +90,6 @@ parser.add_argument("expenses", type=int)
 #
 #
 # datasets = load_datasets()
-
-
 
 class Main(Resource):
     def get(self, data_id):
@@ -143,10 +143,30 @@ class Main(Resource):
         return {"message": "Dataset updated"}
 
 
+class GetByName(Resource):
+    def get(self):
+        name = request.args.get('name')
+        if not name:
+            return {"message": "Name parameter is required"}, 400
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM datasets WHERE name = %s;", (name,))
+        rows = cur.fetchall()
+        conn.close()
+
+        if rows:
+            result = {}
+            for row in rows:
+                result[row[0]] = {"name": row[1], "expenses": row[2]}
+            return jsonify(result)
+        else:
+            return {"message": "Dataset not found"}, 404
+
+
 api.add_resource(Main, "/api/datasets/<int:data_id>")
+api.add_resource(GetByName, "/api/datasets_by_name")
 api.init_app(app)
 
 if __name__ == "__main__":
     app.run(debug=True, port=3001, host="localhost")  # для удаленного сервера значение False
-
-
