@@ -172,14 +172,16 @@ class Amount:
         # }
 
         return {
+            #то что нашел в бд
             "data": [{
-                "name": 'Test1',
+                "name": 'Test1', 
                 "amount": '1',
             },
             {
                 "name": 'Test2',
                 "amount": '2',
             }], 
+            #то что не нашел
             "not_found": ['Test3']
         }
     
