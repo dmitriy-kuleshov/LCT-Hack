@@ -1,4 +1,7 @@
-host = "localhost"
-user = "postgres"
-password = "sanji"
-db_name = "hack_db"
+DATABASE = {
+    'host': 'localhost',
+    'port': '5432',
+    'dbname': 'hack_db',
+    'user': 'postgres',
+    'password': 'sanji'
+}
