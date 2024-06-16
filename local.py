@@ -2,8 +2,8 @@ import requests
 
 url = "http://127.0.0.1:5000/get_product"
 params = {
-    "table": "oboroty_21_2022",
-    "product_name": "Камера видеонаблюдения R Vi-IPC32MS-IR V.2 (2.8 мм)"
+    "table": "ostatki_21_2022",
+    "product_name": "Электрочайник BOSCH TWK3A013"
 }
 
 response = requests.get(url, params=params)
