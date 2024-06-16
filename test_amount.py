@@ -1,11 +1,15 @@
 import requests
 
-url = "http://127.0.0.1:5000/api/amount"
+url = "http://localhost:5000/api/amount"
 payload = {
     "products": ["Электрочайник BOSCH TWK3A013"]
 }
 
-response = requests.post(url, json=payload)
+headers = {
+    "Content-Type": "application/json"
+}
+
+response = requests.post(url, json=payload, headers=headers)
 
 print(f"Status Code: {response.status_code}")
 print(f"Response Content: {response.content}")
