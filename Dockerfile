@@ -8,7 +8,7 @@ RUN apt-get install python3-venv -y
 RUN apt-get install python3-flask -y
 RUN apt-get install python3-requests -y
 RUN apt-get install python3-psycopg2 -y
-RUN apt-get install python3-flask_restful -y
+RUN apt-get install python3-flask-restful -y
 COPY ./src .
 
 #RUN python3 main.py
