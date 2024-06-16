@@ -18,7 +18,7 @@ def get_db_connection():
     )
     return conn
 
-
+# для неточного поиска
 @app.route('/products', methods=['GET'])
 def search_products():
     search_query = request.args.get('q', '')
