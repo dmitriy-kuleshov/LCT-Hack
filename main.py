@@ -1,8 +1,10 @@
 import psycopg2
 from config import DATABASE
 from flask import Flask, request, jsonify
+from flask_restful import Api, Resource
 
 app = Flask(__name__)
+api = Api(app)
 
 
 def get_db_connection():
@@ -14,6 +16,59 @@ def get_db_connection():
         password=DATABASE['password']
     )
     return conn
+
+
+def get_amounts(products):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    amounts = {}
+    not_found = []
+
+    valid_tables = ['ostatki_21_2022', 'ostatki_101_2022', 'ostatki_105_2022']
+
+    for product in products:
+        found = False
+        for table in valid_tables:
+            query = f'SELECT "Основные средства", "Количество" FROM {table} WHERE "Основные средства" = %s'
+            cursor.execute(query, (product,))
+            result = cursor.fetchone()
+            if result:
+                amounts[result[0]] = result[1]
+                found = True
+                break
+        if not found:
+            not_found.append(product)
+
+    cursor.close()
+    conn.close()
+
+    return amounts, not_found
+
+
+class Amount(Resource):
+    def post(self):
+        data = request.get_json()
+        if not data or 'products' not in data:
+            return jsonify({'error': 'Products are required'}), 400
+
+        print("Received data:", data)  # Debug output
+        products = data['products']
+
+        amounts, not_found = get_amounts(products)
+
+        found_products = [{"name": name, "amount": amount} for name, amount in amounts.items()]
+
+        print("Found products:", found_products)  # Debug output
+        print("Not found products:", not_found)  # Debug output
+
+        return jsonify({
+            "data": found_products,
+            "not_found": not_found
+        })
+
+
+api.add_resource(Amount, "/api/amount")
 
 
 @app.route('/get_product', methods=['GET', 'POST', 'PUT', 'DELETE'])
@@ -54,11 +109,7 @@ def get_product():
                 return jsonify({'error': 'Product not found'}), 404
 
             column_names = [desc[0] for desc in cursor.description]
-            # фильтр для полей с пустыми значениями
-            products = []
-            for row in result:
-                product = {col: val for col, val in zip(column_names, row) if val is not None}
-                products.append(product)
+            products = [{col: val for col, val in zip(column_names, row) if val is not None} for row in result]
 
             cursor.close()
             conn.close()
@@ -66,7 +117,6 @@ def get_product():
             return jsonify(products)
 
         elif request.method == 'POST':
-            # Добавить новую запись в таблицу
             columns = ', '.join(data.keys())
             values = ', '.join(['%s'] * len(data))
             query = f'INSERT INTO {table} ({columns}) VALUES ({values})'
@@ -79,7 +129,6 @@ def get_product():
             return jsonify({'message': 'Product added successfully'}), 201
 
         elif request.method == 'PUT':
-            # Обновить запись в таблице
             update_data = ', '.join([f'"{key}" = %s' for key in data if key != 'product_name'])
             query = f'UPDATE {table} SET {update_data} WHERE "Основные средства" = %s'
             cursor.execute(query, tuple(data[key] for key in data if key != 'product_name') + (product_name,))
@@ -91,7 +140,6 @@ def get_product():
             return jsonify({'message': 'Product updated successfully'})
 
         elif request.method == 'DELETE':
-            # Удалить запись из таблицы
             query = f'DELETE FROM {table} WHERE "Основные средства" = %s'
             cursor.execute(query, (product_name,))
             conn.commit()
