@@ -1,12 +1,13 @@
 import psycopg2
-from config import DATABASE
 from flask import Flask, request, jsonify
+from config import DATABASE
 from flask_restful import Api, Resource
 
 app = Flask(__name__)
 api = Api(app)
 
 
+# Функция для получения соединения с базой данных
 def get_db_connection():
     conn = psycopg2.connect(
         host=DATABASE['host'],
@@ -18,6 +19,36 @@ def get_db_connection():
     return conn
 
 
+@app.route('/products', methods=['GET'])
+def search_products():
+    search_query = request.args.get('q', '')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        valid_tables = ['ostatki_21_2022', 'ostatki_101_2022', 'ostatki_105_2022']
+
+        # Используем первую из доступных таблиц для поиска
+        for table in valid_tables:
+            query = f'SELECT "Основные средства", "Количество" FROM {table} WHERE LOWER("Основные средства") LIKE %s'
+            cursor.execute(query, ('%' + search_query.lower() + '%',))
+            results = cursor.fetchall()
+
+            if results:
+                # Если нашли результаты в таблице, преобразуем их в JSON и возвращаем
+                serialized_results = [{'name': row[0], 'amount': row[1]} for row in results]
+                return jsonify(serialized_results)
+
+        # Если ничего не найдено, возвращаем пустой список
+        return jsonify([])
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# функция для получения количества продуктов и списка ненайденных продуктов
 def get_amounts(products):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -27,40 +58,39 @@ def get_amounts(products):
 
     valid_tables = ['ostatki_21_2022', 'ostatki_101_2022', 'ostatki_105_2022']
 
-    for product in products:
-        found = False
-        for table in valid_tables:
-            query = f'SELECT "Основные средства", "Количество" FROM {table} WHERE "Основные средства" = %s'
-            cursor.execute(query, (product,))
-            result = cursor.fetchone()
-            if result:
-                amounts[result[0]] = result[1]
-                found = True
-                break
-        if not found:
-            not_found.append(product)
+    try:
+        for product in products:
+            found = False
+            for table in valid_tables:
+                query = f'SELECT "Основные средства", "Количество" FROM {table} WHERE "Основные средства" = %s'
+                cursor.execute(query, (product,))
+                result = cursor.fetchone()
+                if result:
+                    amounts[result[0]] = result[1]
+                    found = True
+                    break
+            if not found:
+                not_found.append(product)
 
-    cursor.close()
-    conn.close()
+        return amounts, not_found
 
-    return amounts, not_found
+    finally:
+        cursor.close()
+        conn.close()
 
 
+# ресурс для API, обрабатывающий запросы на получение количества продуктов
 class Amount(Resource):
     def post(self):
         data = request.get_json()
         if not data or 'products' not in data:
             return jsonify({'error': 'Products are required'}), 400
 
-        print("Received data:", data)  # Debug output
         products = data['products']
 
         amounts, not_found = get_amounts(products)
 
         found_products = [{"name": name, "amount": amount} for name, amount in amounts.items()]
-
-        print("Found products:", found_products)  # Debug output
-        print("Not found products:", not_found)  # Debug output
 
         return jsonify({
             "data": found_products,
@@ -68,9 +98,11 @@ class Amount(Resource):
         })
 
 
+# добавление ресурса API
 api.add_resource(Amount, "/api/amount")
 
 
+# путь для работы с продуктами
 @app.route('/get_product', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def get_product():
     if request.method == 'GET':
@@ -104,15 +136,10 @@ def get_product():
             result = cursor.fetchall()
 
             if not result:
-                cursor.close()
-                conn.close()
                 return jsonify({'error': 'Product not found'}), 404
 
             column_names = [desc[0] for desc in cursor.description]
             products = [{col: val for col, val in zip(column_names, row) if val is not None} for row in result]
-
-            cursor.close()
-            conn.close()
 
             return jsonify(products)
 
@@ -123,9 +150,6 @@ def get_product():
             cursor.execute(query, tuple(data.values()))
             conn.commit()
 
-            cursor.close()
-            conn.close()
-
             return jsonify({'message': 'Product added successfully'}), 201
 
         elif request.method == 'PUT':
@@ -134,9 +158,6 @@ def get_product():
             cursor.execute(query, tuple(data[key] for key in data if key != 'product_name') + (product_name,))
             conn.commit()
 
-            cursor.close()
-            conn.close()
-
             return jsonify({'message': 'Product updated successfully'})
 
         elif request.method == 'DELETE':
@@ -144,13 +165,14 @@ def get_product():
             cursor.execute(query, (product_name,))
             conn.commit()
 
-            cursor.close()
-            conn.close()
-
             return jsonify({'message': 'Product deleted successfully'})
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
 
 
 if __name__ == '__main__':
