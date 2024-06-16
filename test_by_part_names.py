@@ -3,6 +3,7 @@ import json
 
 base_url = "http://localhost:5000"  # Укажите базовый URL вашего Flask приложения
 
+
 def test_search_products(search_query):
     url = f"http://localhost:5000/products"
     try:
@@ -16,6 +17,7 @@ def test_search_products(search_query):
             print(response.text)
     except requests.exceptions.RequestException as e:
         print(f"Search Products Test Failed. Exception: {str(e)}")
+
 
 # Запуск теста для поиска товаров по части имени
 if __name__ == "__main__":
