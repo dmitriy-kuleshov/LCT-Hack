@@ -1,0 +1,16 @@
+services:
+  flask:
+    build: .
+    environment:
+      # для отладки (при запуске в релиз убрать!)
+      - FLASK_ENV=development
+      ## Позволяет отслеживать процесс работы приложения в командной строке
+      - PYTHONUNBUFFERED=True
+      ##
+      # Перезапускаем сервис в случае падения 
+    restart: always
+    container_name: backend-flask
+    ports:
+      - "5000:5000"
+
+    command: python3 main.py
