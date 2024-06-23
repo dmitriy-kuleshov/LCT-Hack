@@ -21,21 +21,21 @@ export const Start: ScenarioNode<MainNodeNames> = {
 export const AmountGetDate: ScenarioNode<MainNodeNames> = {
   type: NodeTypes.AnswerNode,
   commands: [goBack(MainNodeNames.start)],
-  message: 'Ввведите дату в формате дд.мм.ггг',
+  message: 'Введите дату в формате дд.мм.ггг',
   validation: (input) => validateDate(input),
   answerVar: 'amountDate',
   nextNode: MainNodeNames.amountGetProducts,
-  errorMessage: 'Ввведите дату в формате дд.мм.ггг',
+  errorMessage: 'Введите дату в формате дд.мм.ггг',
 }
 
 export const AmountGetProducts: ScenarioNode<MainNodeNames> = {
   type: NodeTypes.AnswerNode,
   commands: [goBack(MainNodeNames.amountGetDate)],
-  message: 'Ввведите инетересующие товары через запятую',
+  message: 'Введите инетересующие товары через запятую',
   validation: () => true,
   answerVar: 'amountProducts',
   nextNode: MainNodeNames.amountResult,
-  errorMessage: 'Ввведите инетересующие товары через запятую',
+  errorMessage: 'Введите инетересующие товары через запятую',
   processing: (input: string) => {
     return input.split(',').map((item) => item.trim())
   },
@@ -50,11 +50,11 @@ export const AmountResult: ScenarioNode<MainNodeNames> = {
 export const ForecastGetProducts: ScenarioNode<MainNodeNames> = {
   type: NodeTypes.AnswerNode,
   commands: [],
-  message: 'Ввведите инетересующие товары через запятую',
+  message: 'Введите инетересующие товары через запятую',
   validation: () => true,
   answerVar: 'forecastProducts',
   nextNode: MainNodeNames.forecastResult,
-  errorMessage: 'Ввведите инетересующие товары через запятую',
+  errorMessage: 'Введите инетересующие товары через запятую',
   processing: (input: string) => {
     return input.split(',').map((item) => item.trim())
   },
