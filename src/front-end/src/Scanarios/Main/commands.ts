@@ -70,7 +70,7 @@ export const getForecast: Command<MainNodeNames> = {
   callback: async ({ forecastProducts }) => {
     try {
       const data = await getForecastFromServer(forecastProducts)
-      const answer = `Проогноз:\n\n${makeMessageText(data, ({ name, date }: any) => `${name} закончится ${date}`)}`
+      const answer = `Прогноз:\n\n${makeMessageText(data, ({ name, date }: any) => `${name} закончится ${date}`)}`
       return goToWithMessage(answer, MainNodeNames.start)
     } catch {
       return goToWithMessage(
