@@ -49,7 +49,7 @@ export const ActionTypes = {
 }
 
 export const AppInitState = (Scenario, currentNode) => ({
-  messages: [{ from: FromTypes.bot, text: 'Выберете команду' }],
+  messages: [{ from: FromTypes.bot, text: 'Выберите команду' }],
   currentNode,
   currentCommands: Scenario[currentNode].commands,
 })
